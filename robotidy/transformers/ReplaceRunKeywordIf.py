@@ -10,6 +10,7 @@ from robot.api.parsing import (
 )
 from robotidy.utils import normalize_name, after_last_dot
 from robotidy.decorators import check_start_end_line
+from robotidy.generate_config import TransformerGenConfig, Parameter, ValidateInt, ParameterBool
 
 
 def insert_separators(indent, tokens, separator):
@@ -69,6 +70,33 @@ class ReplaceRunKeywordIf(ModelTransformer):
 
     See https://robotidy.readthedocs.io/en/latest/transformers/ReplaceRunKeywordIf.html for more examples.
     """
+
+    def generate_config(self):
+        config = TransformerGenConfig(
+            name=self.__class__.__name__,
+            enabled=self.__dict__.get("ENABLED", True),
+            msg="""
+            Do you want to replace `Run Keyword If` keyword calls with IF expressions?
+            Following code:
+
+                Run Keyword If  ${condition}
+                ...  Keyword  ${arg}
+                ...  ELSE IF  ${condition2}  Keyword2
+                ...  ELSE  Keyword3
+
+            will be transformed to:
+
+                IF    ${condition}
+                    Keyword    ${arg}
+                ELSE IF    ${condition2}
+                    Keyword2
+                ELSE
+                    Keyword3
+                END
+            
+            """,
+        )
+        return config
 
     @check_start_end_line
     def visit_KeywordCall(self, node):  # noqa
