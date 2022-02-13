@@ -93,7 +93,7 @@ class MergeAndOrderSections(ModelTransformer):
             "Default order of section is: Comments > Settings > Variables > Test Cases > Keywords. You can configure "
             "it by using comma separated list of sections (ie. settings,keywords,variables,testcases,comments):",
             "order",
-            ValidateCommaSeparated(["settings", "keywords", "variables", "testcases", "comments"])
+            ValidateCommaSeparated(["settings", "keywords", "variables", "testcases", "comments"]),
         )
         create_comment_section = ParameterBool(
             "Any data before first section is treated as comment in Robot Framework. You can put them "

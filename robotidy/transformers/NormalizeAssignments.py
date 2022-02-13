@@ -132,7 +132,7 @@ class NormalizeAssignments(ModelTransformer):
             "most common sign. You can instead overwrite all signs with selected one (possible types are: "
             "`autodetect` (default), `remove`, `equal_sign` ('='), `space_and_equal_sign` (' =')",
             "equal_sign_type",
-            ValidateChoice(["autodetect", "remove", "equal_sign", "space_and_equal_sign"])
+            ValidateChoice(["autodetect", "remove", "equal_sign", "space_and_equal_sign"]),
         )
 
         equal_sign_type_variables = Parameter(
@@ -140,7 +140,7 @@ class NormalizeAssignments(ModelTransformer):
             "all signs with selected one (possible types are: "
             "`autodetect`, `remove` (default), `equal_sign` ('='), `space_and_equal_sign` (' =')",
             "equal_sign_type",
-            ValidateChoice(["autodetect", "remove", "equal_sign", "space_and_equal_sign"])
+            ValidateChoice(["autodetect", "remove", "equal_sign", "space_and_equal_sign"]),
         )
         config.parameters.append(equal_sign_type)
         config.parameters.append(equal_sign_type_variables)
