@@ -1,6 +1,4 @@
-from typing import Iterable
-
-from robot.api.parsing import ModelTransformer, Token, EmptyLine, Comment
+from robot.api.parsing import ModelTransformer, EmptyLine, Comment
 
 try:
     from robot.api.parsing import ReturnStatement

@@ -2,7 +2,6 @@ from robot.api.parsing import Token, ModelTransformer, SectionHeader, EmptyLine
 from robot.parsing.model.statements import Statement
 
 from robotidy.exceptions import InvalidParameterValueError
-import click
 
 
 class MergeAndOrderSections(ModelTransformer):

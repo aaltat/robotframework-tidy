@@ -11,7 +11,6 @@ from robotidy.transformers import load_transformers
 from robotidy.transformers.AlignSettingsSection import AlignSettingsSection
 from robotidy.transformers.ReplaceRunKeywordIf import ReplaceRunKeywordIf
 from robotidy.transformers.SmartSortKeywords import SmartSortKeywords
-import robotidy.utils
 from robotidy.utils import node_within_lines
 from robotidy.version import __version__
 from .utils import run_tidy

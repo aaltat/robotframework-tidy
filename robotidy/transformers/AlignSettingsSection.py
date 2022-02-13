@@ -4,6 +4,7 @@ from robot.api.parsing import ModelTransformer, Token
 from robot.parsing.model import Statement
 
 from robotidy.utils import node_outside_selection, round_to_four, tokens_by_lines, left_align, is_blank_multiline
+from robotidy.generate_config import TransformerGenConfig, Parameter, ValidateInt, ParameterBool
 
 
 class AlignSettingsSection(ModelTransformer):
@@ -65,6 +66,68 @@ class AlignSettingsSection(ModelTransformer):
         self.up_to_column = up_to_column - 1
         self.argument_indent = argument_indent
         self.min_width = min_width
+
+    def generate_config(self):
+        config = TransformerGenConfig(
+            name=self.__class__.__name__,
+            enabled=self.__dict__.get("ENABLED", True),
+            msg="""
+            Do you want to align statements in ``*** Settings ***`` section to columns?
+            Following code:
+
+                *** Settings ***
+                Library      SeleniumLibrary
+                Library   Mylibrary.py
+                Variables  variables.py
+                Test Timeout  1 min
+                    # this should be left aligned
+
+            will be transformed to::
+
+                *** Settings ***
+                Library         SeleniumLibrary
+                Library         Mylibrary.py
+                Variables       variables.py
+                Test Timeout    1 min
+                # this should be left aligned
+
+            """,
+        )
+        if not config.enabled:
+            return config
+        up_to_param = Parameter(
+            "By default only first 2 data columns are aligned. The rest is separated by standard "
+            "separator. You can configure it (use 0 to align all columns):",
+            "up_to_column",
+            ValidateInt(min=0),
+        )
+        argument_indent = Parameter(
+            """
+        Arguments inside keywords in Suite Setup, Suite Teardown, Test Setup and Test Teardown are indented 
+        by additional ``argument_indent`` (default ``4``) spaces:
+
+        *** Settings ***
+        Suite Setup         Start Session
+        ...                     host=${IPADDRESS}
+        ...                     user=${USERNAME}
+        ...                     password=${PASSWORD}
+        Suite Teardown      Close Session
+        
+        You can configure the indent (use 0 to disable this feature):
+        """,
+            "argument_indent",
+            ValidateInt(min=0),
+        )
+        min_width = Parameter(
+            "Data columns are aligned to longest token in given column. You can change this behaviour and use fixed "
+            "minimal width of column:",
+            "min_width",
+            ValidateInt(min=0),
+        )
+        config.parameters.append(up_to_param)
+        config.parameters.append(argument_indent)
+        config.parameters.append(min_width)
+        return config
 
     def visit_SettingSection(self, node):  # noqa
         if node_outside_selection(node, self.formatting_config):

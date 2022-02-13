@@ -13,6 +13,7 @@ from robot.api.parsing import (
 
 from robotidy.decorators import check_start_end_line
 from robotidy.utils import round_to_four, is_suite_templated
+from robotidy.generate_config import TransformerGenConfig, Parameter, ValidateInt, ParameterBool
 
 
 class AlignTestCases(ModelTransformer):
@@ -53,6 +54,49 @@ class AlignTestCases(ModelTransformer):
         self.test_name_len = 0
         self.name_line = 0
         self.indent = 0
+
+    def generate_config(self):
+        config = TransformerGenConfig(
+            name=self.__class__.__name__,
+            enabled=self.__dict__.get("ENABLED", True),
+            msg="""
+            Do you want to align templated tests to columns?
+            Following code:
+
+                *** Test Cases ***    baz    qux
+                # some comment
+                test1    hi    hello
+                test2 long test name    asdfasdf    asdsdfgsdfg
+
+            will be transformed to::
+
+                *** Test Cases ***      baz         qux
+                # some comment
+                test1                   hi          hello
+                test2 long test name    asdfasdf    asdsdfgsdfg
+                                        bar1        bar2
+
+            """,
+        )
+        if not config.enabled:
+            return config
+        only_with_headers = ParameterBool(
+            "If you don't want to align test case section that does not contain header names (in above example "
+            "baz and quz are header names) then configure `only_with_headers` parameter:",
+            "only_with_headers",
+            self.only_with_headers,
+            "Transform all (default)",
+            "Transform only if section contain header names",
+        )
+        min_width = Parameter(
+            "Data columns are aligned to longest token in given column. You can change this behaviour and use "
+            "fixed minimal width of column:",
+            "min_width",
+            ValidateInt(min=0),
+        )
+        config.parameters.append(only_with_headers)
+        config.parameters.append(min_width)
+        return config
 
     def visit_File(self, node):  # noqa
         if not is_suite_templated(node):

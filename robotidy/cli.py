@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Tuple, Dict, List, Iterable, Optional, Any, Pattern
+from typing import Tuple, Dict, List, Optional, Any, Pattern
 
 import click
 import re
@@ -14,6 +14,7 @@ from robotidy.utils import (
     RecommendationFinder,
 )
 from robotidy.decorators import catch_exceptions
+from robotidy.generate_config import GenerateConfig
 from robotidy.version import __version__
 
 
@@ -319,6 +320,11 @@ def print_transformers_list():
     is_flag=True,
     help="Transform files using transformers in order provided in cli",
 )
+@click.option(
+    "--generate-config",
+    is_flag=True,
+    help="Use interactive questions to generate Robotidy config file",
+)
 @click.version_option(version=__version__, prog_name="robotidy")
 @click.pass_context
 @catch_exceptions
@@ -346,7 +352,11 @@ def cli(
     list_transformers: bool,
     describe_transformer: Optional[str],
     force_order: bool,
+    generate_config: bool,
 ):
+    if generate_config:
+        GenerateConfig().generate()
+        ctx.exit(0)
     if list_transformers:
         print("--list-transformers is deprecated in 1.3.0. Use --list instead")
         ctx.exit(0)
