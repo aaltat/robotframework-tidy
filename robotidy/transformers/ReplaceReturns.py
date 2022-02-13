@@ -13,6 +13,7 @@ from robotidy.utils import (
     create_statement_from_tokens,
 )
 from robotidy.decorators import check_start_end_line
+from robotidy.generate_config import TransformerGenConfig, Parameter, ValidateInt, ParameterBool
 
 
 class ReplaceReturns(ModelTransformer):
@@ -62,6 +63,53 @@ class ReplaceReturns(ModelTransformer):
 
     def __init__(self):
         self.return_statement = None
+
+    def generate_config(self):
+        config = TransformerGenConfig(
+            name=self.__class__.__name__,
+            enabled=self.__dict__.get("ENABLED", True),
+            msg="""
+            Do you want to replace return statements (such as `[Return]` setting or `Return From Keyword` keyword) 
+            with `RETURN` statement?
+            Following code:
+
+                *** Keywords ***
+                Keyword
+                    Return From Keyword If    $condition    2
+                    Sub Keyword
+                    [Return]    1
+        
+                Keyword 2
+                    Run Keyword And Return If    ${var}==2  Keyword 2    ${var}
+                    Return From Keyword    ${arg}
+        
+                Keyword 3
+                    Run Keyword And Return    Keyword   ${arg}
+            
+            will be transformed to:
+
+                *** Keywords ***
+                Keyword
+                    IF    $condition
+                        RETURN    2
+                    END
+                    Sub Keyword
+                    RETURN    1
+    
+                Keyword 2
+                    IF    ${var}==2
+                        RETURN    Keyword 2    ${var}
+                    END
+                    RETURN    ${arg}
+    
+                Keyword 3
+                    RETURN    Keyword   ${arg}
+
+            """,
+        )
+        if not config.enabled:
+            return config
+        return config
 
     def visit_Keyword(self, node):  # noqa
         self.return_statement = None
