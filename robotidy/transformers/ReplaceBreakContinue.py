@@ -9,6 +9,7 @@ except ImportError:
 
 from robotidy.utils import normalize_name, after_last_dot, wrap_in_if_and_replace_statement, ROBOT_VERSION
 from robotidy.decorators import check_start_end_line
+from robotidy.generate_config import TransformerGenConfig
 
 
 class ReplaceBreakContinue(ModelTransformer):
@@ -50,6 +51,44 @@ class ReplaceBreakContinue(ModelTransformer):
 
     def __init__(self):
         self.in_loop = False
+
+    def generate_config(self):
+        config = TransformerGenConfig(
+            name=self.__class__.__name__,
+            enabled=self.__dict__.get("ENABLED", True),
+            msg="""
+            Do you want to replace `Continue For Loop` and `Exit For Loop` keyword variants with CONTINUE and BREAK "
+            statements?
+            
+            Following code:
+
+                *** Keywords ***
+                Keyword
+                    FOR    ${var}    IN  1  2
+                        Continue For Loop
+                        Continue For Loop If    $condition
+                        Exit For Loop
+                        Exit For Loop If    $condition
+                    END
+        
+            will be transformed to:
+
+                *** Keywords ***
+                Keyword
+                    FOR    ${var}    IN  1  2
+                        CONTINUE
+                        IF    $condition
+                            CONTINUE
+                        END
+                        BREAK
+                        IF    $condition
+                            BREAK
+                        END
+                    END
+            
+            """,
+        )
+        return config
 
     def visit_File(self, node):  # noqa
         self.in_loop = False
