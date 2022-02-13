@@ -85,7 +85,7 @@ class AlignTestCases(ModelTransformer):
             "baz and quz are header names) then configure `only_with_headers` parameter:",
             "only_with_headers",
             self.only_with_headers,
-            "Transform all (default)",
+            "Transform all",
             "Transform only if section contain header names",
         )
         min_width = Parameter(

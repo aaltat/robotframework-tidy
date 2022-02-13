@@ -2,6 +2,7 @@ from robot.api.parsing import Token, ModelTransformer, SectionHeader, EmptyLine
 from robot.parsing.model.statements import Statement
 
 from robotidy.exceptions import InvalidParameterValueError
+from robotidy.generate_config import TransformerGenConfig, Parameter, ValidateCommaSeparated, ParameterBool
 
 
 class MergeAndOrderSections(ModelTransformer):
@@ -79,6 +80,32 @@ class MergeAndOrderSections(ModelTransformer):
                 "order=comments,settings,variables,testcases,variables",
             )
         return parsed_order
+
+    def generate_config(self):
+        config = TransformerGenConfig(
+            name=self.__class__.__name__,
+            enabled=self.__dict__.get("ENABLED", True),
+            msg="Do you want to merge duplicated sections and order them?",
+        )
+        if not config.enabled:
+            return config
+        order = Parameter(
+            "Default order of section is: Comments > Settings > Variables > Test Cases > Keywords. You can configure "
+            "it by using comma separated list of sections (ie. settings,keywords,variables,testcases,comments):",
+            "order",
+            ValidateCommaSeparated(["settings", "keywords", "variables", "testcases", "comments"])
+        )
+        create_comment_section = ParameterBool(
+            "Any data before first section is treated as comment in Robot Framework. You can put them "
+            "inside `*** Comments ***` section",
+            "create_comment_section",
+            self.create_comment_section,
+            "Create `*** Comments ***` section for lines before first section",
+            "Don't create it",
+        )
+        config.parameters.append(order)
+        config.parameters.append(create_comment_section)
+        return config
 
     def visit_File(self, node):  # noqa
         if len(node.sections) < 2:

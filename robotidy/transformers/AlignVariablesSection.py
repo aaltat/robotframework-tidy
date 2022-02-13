@@ -5,6 +5,7 @@ from robot.parsing.model import Statement
 
 from robotidy.utils import node_outside_selection, round_to_four, tokens_by_lines, left_align, is_blank_multiline
 from robotidy.exceptions import InvalidParameterValueError
+from robotidy.generate_config import TransformerGenConfig, Parameter, ValidateInt, ValidateCommaSeparated
 
 
 class AlignVariablesSection(ModelTransformer):
@@ -60,6 +61,59 @@ class AlignVariablesSection(ModelTransformer):
                 )
             ret.add(allow_types[skip_type])
         return ret
+
+    def generate_config(self):
+        config = TransformerGenConfig(
+            name=self.__class__.__name__,
+            enabled=self.__dict__.get("ENABLED", True),
+            msg="""
+            Do you want to align variables in *** Variables *** section to columns?
+            Following code:
+
+                *** Variables ***
+                ${VAR}  1
+                ${LONGER_NAME}  2
+                &{MULTILINE}  a=b
+                ...  b=c
+
+            will be transformed to::
+
+                *** Variables ***
+                ${VAR}          1
+                ${LONGER_NAME}  2
+                &{MULTILINE}    a=b
+                ...             b=c
+
+            """,
+        )
+        if not config.enabled:
+            return config
+        up_to_param = Parameter(
+            "By default only first 2 data columns are aligned. The rest is separated by standard "
+            "separator. You can configure it (use 0 to align all columns):",
+            "up_to_column",
+            ValidateInt(min=0),
+        )
+        skip_types = Parameter(
+            """
+            It is possible to not align variables of given types. You can choose between following types: 
+            `scalar` (`$`), `list` (`@`), `dict` (`&`). Invalid variables - such as missing values or not 
+            left aligned - will be always aligned no matter the type. You can configure types to skip using 
+            `skip_types` parameter providing comma separated list (ie. dict,list):
+            """,
+            "skip_types",
+            ValidateCommaSeparated({"scalar", "dict", "list"}),
+        )
+        min_width = Parameter(
+            "Data columns are aligned to longest token in given column. You can change this behaviour and use fixed "
+            "minimal width of column:",
+            "min_width",
+            ValidateInt(min=0),
+        )
+        config.parameters.append(up_to_param)
+        config.parameters.append(skip_types)
+        config.parameters.append(min_width)
+        return config
 
     def should_parse(self, node):
         if not node.name:

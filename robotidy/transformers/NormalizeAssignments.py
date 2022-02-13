@@ -4,6 +4,7 @@ from collections import Counter
 
 from robot.api.parsing import ModelTransformer, Variable, Token
 from robotidy.exceptions import InvalidParameterValueError
+from robotidy.generate_config import TransformerGenConfig, Parameter, ValidateChoice
 
 
 class NormalizeAssignments(ModelTransformer):
@@ -83,6 +84,67 @@ class NormalizeAssignments(ModelTransformer):
                 "Possible values:\n    remove\n    equal_sign\n    space_and_equal_sign",
             )
         return types[value]
+
+    def generate_config(self):
+        config = TransformerGenConfig(
+            name=self.__class__.__name__,
+            enabled=self.__dict__.get("ENABLED", True),
+            msg="""
+            Do you want to normalize assignment signs?
+            Following code:
+            
+                *** Variables ***
+                ${var} =  ${1}
+                @{list}  a
+                ...  b
+                ...  c
+        
+                ${variable}=  10
+        
+                *** Keywords ***
+                Keyword
+                    ${var}  Keyword1
+                    ${var}   Keyword2
+                    ${var}=    Keyword
+        
+            will be transformed to:
+        
+                *** Variables ***
+                ${var}  ${1}
+                @{list}  a
+                ...  b
+                ...  c
+        
+                ${variable}  10
+        
+                *** Keywords ***
+                Keyword
+                    ${var}  Keyword1
+                    ${var}   Keyword2
+                    ${var}    Keyword
+            
+            """,
+        )
+        if not config.enabled:
+            return config
+        equal_sign_type = Parameter(
+            "By default all assignments signs in *** Keywords *** and *** Test Cases *** section are normalized to "
+            "most common sign. You can instead overwrite all signs with selected one (possible types are: "
+            "`autodetect` (default), `remove`, `equal_sign` ('='), `space_and_equal_sign` (' =')",
+            "equal_sign_type",
+            ValidateChoice(["autodetect", "remove", "equal_sign", "space_and_equal_sign"])
+        )
+
+        equal_sign_type_variables = Parameter(
+            "By default all assignments signs in *** Variables *** section are removed. You can instead overwrite "
+            "all signs with selected one (possible types are: "
+            "`autodetect`, `remove` (default), `equal_sign` ('='), `space_and_equal_sign` (' =')",
+            "equal_sign_type",
+            ValidateChoice(["autodetect", "remove", "equal_sign", "space_and_equal_sign"])
+        )
+        config.parameters.append(equal_sign_type)
+        config.parameters.append(equal_sign_type_variables)
+        return config
 
     def visit_File(self, node):  # noqa
         """

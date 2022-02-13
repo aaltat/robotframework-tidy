@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
 from textwrap import dedent
+from functools import wraps
 
 from robotidy.transformers import load_transformers
 
@@ -107,6 +108,20 @@ def true_false_exit():
     return answer == 2
 
 
+def retry_if_none(func):
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        for retry in range(3):
+            value = func(*args, **kwargs)
+            if value is not None:
+                return value
+        else:
+            print("Failed to get valid value. Exiting..")
+            sys.exit(0)
+    return wrapper
+
+
 class GetValue:
     def get_value(self):
         return input("Your answer: ")
@@ -117,22 +132,47 @@ class ValidateInt(GetValue):
         self.min = min
         self.max = max
 
+    @retry_if_none
     def parse(self):
-        for retry in range(3):
-            try:
-                value_int = int(self.get_value())
-                if self.min is not None:
-                    if value_int < self.min:
-                        print(f"Provided number lower than {self.min}")
-                        continue
-                if self.max is not None:
-                    if value_int > self.max:
-                        print(f"Provided number higher than {self.min}")
-                        continue
-                return value_int
-            except ValueError:
-                print("Provided answer is not integer")
-                continue
+        try:
+            value_int = int(self.get_value())
+            if self.min is not None:
+                if value_int < self.min:
+                    print(f"Provided number lower than {self.min}")
+                    return None
+            if self.max is not None:
+                if value_int > self.max:
+                    print(f"Provided number higher than {self.min}")
+                    return None
+            return value_int
+        except ValueError:
+            print("Provided answer is not integer")
+
+
+class ValidateCommaSeparated(GetValue):
+    def __init__(self, allowed):
+        self.allowed = allowed
+
+    @retry_if_none
+    def parse(self):
+        value = self.get_value()
+        if not value:
+            return None
+        for skip_type in value.split(","):
+            if skip_type not in self.allowed:
+                print(f"Provide comma separated list of strings from: {','.join(self.allowed)}")
+                return None
         else:
-            print("Failed to get valid value. Exiting..")
-            sys.exit(0)
+            return value
+
+
+class ValidateChoice(GetValue):
+    def __init__(self, choice):
+        self.choice = choice
+
+    @retry_if_none
+    def parse(self):
+        value = self.get_value()
+        if value not in self.choice:
+            print(f"Provide one of: {', '.join(self.choice)}")
+            return None

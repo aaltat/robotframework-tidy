@@ -4,7 +4,7 @@ from robot.api.parsing import ModelTransformer, Token
 from robot.parsing.model import Statement
 
 from robotidy.utils import node_outside_selection, round_to_four, tokens_by_lines, left_align, is_blank_multiline
-from robotidy.generate_config import TransformerGenConfig, Parameter, ValidateInt, ParameterBool
+from robotidy.generate_config import TransformerGenConfig, Parameter, ValidateInt
 
 
 class AlignSettingsSection(ModelTransformer):
@@ -82,7 +82,7 @@ class AlignSettingsSection(ModelTransformer):
                 Test Timeout  1 min
                     # this should be left aligned
 
-            will be transformed to::
+            will be transformed to:
 
                 *** Settings ***
                 Library         SeleniumLibrary
