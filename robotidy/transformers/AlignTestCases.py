@@ -13,7 +13,6 @@ from robot.api.parsing import (
 
 from robotidy.decorators import check_start_end_line
 from robotidy.utils import round_to_four, is_suite_templated
-from robotidy.generate_config import TransformerGenConfig, Parameter, ValidateInt, ParameterBool
 
 
 class AlignTestCases(ModelTransformer):
@@ -56,7 +55,9 @@ class AlignTestCases(ModelTransformer):
         self.indent = 0
 
     def generate_config(self):
-        config = TransformerGenConfig(
+        from robotidy.generate_config import TransformerConfig, ParameterInt, ParameterBool
+
+        config = TransformerConfig(
             name=self.__class__.__name__,
             enabled=self.__dict__.get("ENABLED", True),
             msg="""
@@ -75,24 +76,24 @@ class AlignTestCases(ModelTransformer):
                 test1                   hi          hello
                 test2 long test name    asdfasdf    asdsdfgsdfg
                                         bar1        bar2
-
             """,
         )
         if not config.enabled:
             return config
         only_with_headers = ParameterBool(
-            "If you don't want to align test case section that does not contain header names (in above example "
-            "baz and quz are header names) then configure `only_with_headers` parameter:",
+            "If you don't want to align test case section that does not contain header names \n"
+            "(in above example baz and quz are header names) then configure `only_with_headers` parameter:",
             "only_with_headers",
             self.only_with_headers,
             "Transform all",
             "Transform only if section contain header names",
         )
-        min_width = Parameter(
-            "Data columns are aligned to longest token in given column. You can change this behaviour and use "
-            "fixed minimal width of column:",
-            "min_width",
-            ValidateInt(min=0),
+        min_width = ParameterInt(
+            "Data columns are aligned to longest token in given column. You can change this behaviour and use fixed "
+            "minimal width of column. Use 0 for default behaviour (align to longest token):",
+            param="min_width",
+            default=0,
+            min=0,
         )
         config.parameters.append(only_with_headers)
         config.parameters.append(min_width)

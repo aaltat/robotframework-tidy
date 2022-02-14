@@ -37,7 +37,14 @@ setup(
     packages=["robotidy"],
     include_package_data=True,
     python_requires=">=3.7",
-    install_requires=["robotframework>=4.0", "Click>=7.0", "toml>=0.10.2", "colorama>=0.4.3", "pathspec==0.9.0"],
+    install_requires=[
+        "robotframework>=4.0",
+        "Click>=7.0",
+        "toml>=0.10.2",
+        "colorama>=0.4.3",
+        "pathspec==0.9.0",
+        "questionary==1.10.0",
+    ],
     extras_requires={
         "dev": ["pytest", "pylama", "pylama_pylint", "coverage", "invoke", "jinja2"],
         "doc": ["sphinx", "sphinx_rtd_theme"],

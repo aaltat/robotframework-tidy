@@ -5,7 +5,6 @@ from robot.parsing.model import Statement
 
 from robotidy.utils import node_outside_selection, round_to_four, tokens_by_lines, left_align, is_blank_multiline
 from robotidy.exceptions import InvalidParameterValueError
-from robotidy.generate_config import TransformerGenConfig, Parameter, ValidateInt, ValidateCommaSeparated
 
 
 class AlignVariablesSection(ModelTransformer):
@@ -63,7 +62,9 @@ class AlignVariablesSection(ModelTransformer):
         return ret
 
     def generate_config(self):
-        config = TransformerGenConfig(
+        from robotidy.generate_config import TransformerConfig, ParameterInt, ParameterSelectMany
+
+        config = TransformerConfig(
             name=self.__class__.__name__,
             enabled=self.__dict__.get("ENABLED", True),
             msg="""
@@ -83,32 +84,34 @@ class AlignVariablesSection(ModelTransformer):
                 ${LONGER_NAME}  2
                 &{MULTILINE}    a=b
                 ...             b=c
-
             """,
         )
         if not config.enabled:
             return config
-        up_to_param = Parameter(
-            "By default only first 2 data columns are aligned. The rest is separated by standard "
-            "separator. You can configure it (use 0 to align all columns):",
-            "up_to_column",
-            ValidateInt(min=0),
+        up_to_param = ParameterInt(
+            "By default only first 2 data columns are aligned. The rest is separated by standard separator.\n"
+            "You can configure how many data columns are aligned (use 0 to align all columns):",
+            param="up_to_column",
+            default=2,
+            min=0,
         )
-        skip_types = Parameter(
+        skip_types = ParameterSelectMany(
             """
             It is possible to not align variables of given types. You can choose between following types: 
             `scalar` (`$`), `list` (`@`), `dict` (`&`). Invalid variables - such as missing values or not 
-            left aligned - will be always aligned no matter the type. You can configure types to skip using 
-            `skip_types` parameter providing comma separated list (ie. dict,list):
+            left aligned - will be always aligned no matter the type. You can configure what variable types to skip 
+            (none by default):
             """,
-            "skip_types",
-            ValidateCommaSeparated({"scalar", "dict", "list"}),
+            param="skip_types",
+            default=set(),
+            choices={"scalar (${variable)": "scalar", "dict (&{variable)": "dict", "list (@{variable)": "list"},
         )
-        min_width = Parameter(
+        min_width = ParameterInt(
             "Data columns are aligned to longest token in given column. You can change this behaviour and use fixed "
-            "minimal width of column:",
-            "min_width",
-            ValidateInt(min=0),
+            "minimal width of column. Use 0 for default behaviour (align to longest token):",
+            param="min_width",
+            default=0,
+            min=0,
         )
         config.parameters.append(up_to_param)
         config.parameters.append(skip_types)

@@ -9,8 +9,8 @@ CONTINUATION = Token(Token.CONTINUATION)
 class SplitTooLongLine(ModelTransformer):
     """
     Split too long lines.
-    If any line in keyword call exceeds given length limit (configurable using ``line_length``, 120 by default) it will be
-    split:
+    If any line in keyword call exceeds given length limit (configurable using ``line_length``, 120 by default) it will
+    be split:
 
         Keyword With Longer Name    ${arg1}    ${arg2}    ${arg3}  # let's assume that arg2 is at 120 char
 
@@ -41,6 +41,54 @@ class SplitTooLongLine(ModelTransformer):
     @property
     def line_length(self):
         return self.formatting_config.line_length if self._line_length is None else self._line_length
+
+    def generate_config(self):
+        from robotidy.generate_config import TransformerConfig, ParameterInt, ParameterBool
+
+        config = TransformerConfig(
+            name=self.__class__.__name__,
+            enabled=self.__dict__.get("ENABLED", True),
+            msg="""
+            Do you want to split too long lines?
+            If any line in keyword call exceeds given length limit (configurable using ``line_length``, 120 by default)
+            it will be split. Following code:
+            
+            
+                Keyword With Longer Name    ${arg1}    ${arg2}    ${arg3}  # let's assume that arg2 is at 120 char
+            
+            will be transformed to:
+            
+                Keyword With Longer Name    ${arg1}
+                ...    ${arg2}    ${arg3}
+            """,
+        )
+        if not config.enabled:
+            return config
+        line_length = ParameterInt(
+            "By default global parameter `--line-length` will be used. You can configure separate max allowed\n"
+            "line length used by this transformer:",
+            param="line_length",
+            default=120,  # TODO
+            min=0,
+        )
+        split_on_every_arg = ParameterBool(
+            """
+            You can use `split_on_every_arg` flag (`False` by default) to force the formatter to put every argument in a
+            new line:
+
+                Keyword With Longer Name
+                ...    ${arg1}
+                ...    ${arg2}
+                ...    ${arg3}
+            """,
+            "split_on_every_arg",
+            self.split_on_every_arg,
+            "Do not split on every argument",
+            "Split on every argument",
+        )
+        config.parameters.append(line_length)
+        config.parameters.append(split_on_every_arg)
+        return config
 
     @check_start_end_line
     def visit_KeywordCall(self, node):  # noqa

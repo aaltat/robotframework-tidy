@@ -1,7 +1,6 @@
-from robot.api.parsing import ModelTransformer, SectionHeader, Token
+from robot.api.parsing import ModelTransformer, Token
 
 from robotidy.decorators import check_start_end_line
-from robotidy.generate_config import TransformerGenConfig, Parameter, ValidateInt, ParameterBool
 
 
 class NormalizeSectionHeaderName(ModelTransformer):
@@ -35,7 +34,9 @@ class NormalizeSectionHeaderName(ModelTransformer):
         self.uppercase = uppercase
 
     def generate_config(self):
-        config = TransformerGenConfig(
+        from robotidy.generate_config import TransformerConfig, ParameterBool
+
+        config = TransformerConfig(
             name=self.__class__.__name__,
             enabled=self.__dict__.get("ENABLED", True),
             msg="""
@@ -46,7 +47,7 @@ class NormalizeSectionHeaderName(ModelTransformer):
                 *** SETTINGS
                 *** SettingS ***
             
-            This transformer can normalize naming to follow ``*** SectionName ***`` format (with plural variant):
+            This transformer can normalize naming to follow `*** SectionName ***` format (with plural variant):
             
                     *** Settings ***
                     *** Keywords ***

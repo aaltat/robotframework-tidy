@@ -52,6 +52,72 @@ class RemoveEmptySettings(ModelTransformer):
             Token.TAGS,
         }
 
+    def generate_config(self):
+        from robotidy.generate_config import TransformerConfig, ParameterSelectSingle, ParameterBool
+
+        config = TransformerConfig(
+            name=self.__class__.__name__,
+            enabled=self.__dict__.get("ENABLED", True),
+            msg="""
+            Do you want to remove empty settings?
+            Following code:
+            
+                *** Setttings ***
+                Library
+                Resource  file.robot
+                
+                *** Keywords ***
+                Keyword
+                    [Documentation]
+                    No Operation
+            
+            will be transformed to:
+            
+                *** Setttings ***
+                Resource  file.robot
+                
+                *** Keywords ***
+                Keyword
+                    No Operation                    
+            """,
+        )
+        if not config.enabled:
+            return config
+        work_mode = ParameterSelectSingle(
+            "You can configure which settings are affected by parameter `work_mode`:",
+            param="work_mode",
+            default="overwrite_ok (default): does not remove settings that are overwriting suite settings \n"
+            "(Test Setup, Test Teardown, Test Template, Test Timeout or Default Tags)",
+            choices={
+                "overwrite_ok (default): does not remove settings that are overwriting suite settings \n"
+                "(Test Setup, Test Teardown, Test Template, Test Timeout or Default Tags)": "overwrite_ok",
+                "Remove all empty settings": "always",
+            },
+        )
+        more_explicit = ParameterBool(
+            """
+            Empty settings that are overwriting suite settings will be converted to be more explicit
+            (given that there is related suite settings present):
+
+                No timeout
+                [Documentation]    Empty timeout means no timeout even when Test Timeout has been used.
+                [Timeout]
+
+            will be transformed to:
+
+                No timeout
+                [Documentation]    Disabling timeout with NONE works too and is more explicit.
+                [Timeout]    NONE
+            """,
+            param="more_explicit",
+            default=self.more_explicit,
+            first="Convert to be more explicit",
+            second="Leave empty (if settings overwrite suite settings)",
+        )
+        config.parameters.append(work_mode)
+        config.parameters.append(more_explicit)
+        return config
+
     @check_start_end_line
     def visit_Statement(self, node):  # noqa
         # when not setting type or setting type but not empty

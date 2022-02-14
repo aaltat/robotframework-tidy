@@ -127,6 +127,78 @@ class OrderSettings(ModelTransformer):
             self.get_order(test_after, testcase_order_after, test_map),
         )
 
+    def generate_config(self):
+        from robotidy.generate_config import TransformerConfig, ParameterOrder
+
+        config = TransformerConfig(
+            name=self.__class__.__name__,
+            enabled=self.__dict__.get("ENABLED", True),
+            msg="""
+            Do you want to order settings like [Arguments], [Setup], [Return] inside Keywords and Test Cases?
+            Keyword settings [Documentation], [Tags], [Timeout], [Arguments] are put before keyword body and
+            settings like [Teardown], [Return] are moved to the end of the keyword.
+            Following code:
+            
+                *** Keywords ***
+                Keyword
+                    [Teardown]  Keyword
+                    [Return]  ${value}
+                    [Arguments]  ${arg}
+                    [Documentation]  this is
+                    ...    doc
+                    [Tags]  sanity
+                    Step
+            
+            will be transformed to:
+            
+                *** Keywords ***
+                Keyword
+                    [Documentation]  this is
+                    ...    doc
+                    [Tags]  sanity
+                    [Arguments]  ${arg}
+                    Step
+                    [Teardown]  Keyword
+                    [Return]  ${value}
+            """,
+        )
+        if not config.enabled:
+            return config
+        keyword_before = ParameterOrder(
+            "You can configure order of settings in keyword that are put at the beginning of the keyword body.\n"
+            "Provide comma separated list of setting names. Missing setting names are not ordered:",
+            param="keyword_before",
+            default="documentation,tags,timeout,arguments",
+            valid="documentation,tags,timeout,arguments,teardown,return".split(","),
+        )
+        keyword_after = ParameterOrder(
+            "You can configure order of settings in keyword that are put at the end of the keyword body.\n"
+            "Provide comma separated list of setting names. Missing setting names are not ordered:",
+            param="keyword_after",
+            default="teardown,return",
+            valid="documentation,tags,timeout,arguments,teardown,return".split(","),
+        )
+        test_before = ParameterOrder(
+            "You can configure order of settings in test case that are put at the beginning of the test case body.\n"
+            "Provide comma separated list of setting names. Missing setting names are not ordered:",
+            param="test_before",
+            default="documentation,tags,template,timeout,setup",
+            valid="documentation,tags,template,timeout,setup,teardown".split(","),
+        )
+        test_after = ParameterOrder(
+            "You can configure order of settings in test case that are put at the end of the test case body.\n"
+            "Provide comma separated list of setting names. Missing setting names are not ordered:",
+            param="test_after",
+            default="teardown",
+            valid="documentation,tags,template,timeout,setup,teardown".split(","),
+        )
+
+        config.parameters.append(keyword_before)
+        config.parameters.append(keyword_after)
+        config.parameters.append(test_before)
+        config.parameters.append(test_after)
+        return config
+
     @check_start_end_line
     def visit_Keyword(self, node):  # noqa
         return self.order_settings(node, self.keyword_settings, self.keyword_before, self.keyword_after)

@@ -36,6 +36,48 @@ class NormalizeTags(ModelTransformer):
                 self.__class__.__name__, "case", case, "Supported cases: lowercase, uppercase, titlecase."
             )
 
+    def generate_config(self):
+        from robotidy.generate_config import TransformerConfig, ParameterSelectSingle, ParameterBool
+
+        config = TransformerConfig(
+            name=self.__class__.__name__,
+            enabled=self.__dict__.get("ENABLED", True),
+            msg="""
+            Do you want to normalize tag names? 
+            Case will be normalized and duplicates will be removed (tags in Robot Framework are case insensitive).
+            Following code:
+            
+                *** Settings ***
+                Default Tags    tag1    Tag2    TAG3    tag3
+            
+            will be transformed to:
+            
+                *** Settings ***
+                Default Tags    tag1    tag2    tag3
+            
+            """,
+        )
+        if not config.enabled:
+            return config
+
+        normalize_case = ParameterBool(
+            "If you only want to remove duplicates, set `normalize_case` to False:",
+            "normalize_case",
+            self.normalize_case,
+            "Normalize case",
+            "Don't normalize case",
+        )
+        config.parameters.append(normalize_case)
+        if normalize_case.value is None and normalize_case.default or normalize_case.value:
+            case = ParameterSelectSingle(
+                "You can select which case function will be applied to tags (lowercase by default):",
+                param="case",
+                default="lowercase",
+                choices={k: k for k in self.CASE_FUNCTIONS},
+            )
+            config.parameters.append(case)
+        return config
+
     def visit_Tags(self, node):  # noqa
         return self.normalize_tags(node, Tags, indent=True)
 

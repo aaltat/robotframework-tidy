@@ -3,7 +3,6 @@ from typing import Optional
 from robot.api.parsing import ModelTransformer, EmptyLine, Token
 
 from robotidy.utils import is_suite_templated
-from robotidy.generate_config import TransformerGenConfig, Parameter, ValidateInt, ParameterBool
 
 
 class NormalizeNewLines(ModelTransformer):
@@ -45,14 +44,16 @@ class NormalizeNewLines(ModelTransformer):
         self.templated = False
 
     def generate_config(self):
-        config = TransformerGenConfig(
+        from robotidy.generate_config import TransformerConfig, ParameterInt, ParameterBool
+
+        config = TransformerConfig(
             name=self.__class__.__name__,
             enabled=self.__dict__.get("ENABLED", True),
             msg="""
             Do you want to normalize empty lines? You can ensure that there is exactly:
-                - ``section_lines = 1`` empty lines between sections,
-                - ``test_case_lines = 1`` empty lines between test cases,
-                - ``keyword_lines = test_case_lines`` empty lines between keywords.
+                - `section_lines = 1` empty lines between sections,
+                - `test_case_lines = 1` empty lines between test cases,
+                - `keyword_lines = test_case_lines` empty lines between keywords.
                 
             This transformer will also remove empty lines after section (and before any data) and 
             append 1 empty line at the end of file.
@@ -60,32 +61,38 @@ class NormalizeNewLines(ModelTransformer):
         )
         if not config.enabled:
             return config
-        test_case_lines = Parameter(
+        test_case_lines = ParameterInt(
             "Test cases are separated by 1 line by default. You can configure it:",
-            "test_case_lines",
-            ValidateInt(min=0),
+            param="test_case_lines",
+            default=self.test_case_lines,
+            min=0,
         )
-        keyword_lines = Parameter(
+        keyword_lines = ParameterInt(
             "Keywords use the same configuration as test cases (separated by 1 line by default). You can configure it:",
-            "keyword_lines",
-            ValidateInt(min=0),
+            param="keyword_lines",
+            default=self.keyword_lines,
+            min=0,
         )
-        section_lines = Parameter(
-            "Sections are separated by 1 line by default. You can configure it:", "section_lines", ValidateInt(min=0)
+        section_lines = ParameterInt(
+            "Sections are separated by 1 line by default. You can configure it:",
+            param="section_lines",
+            default=self.section_lines,
+            min=0,
         )
         separate_templated_tests = ParameterBool(
-            "If the suite contains Test Template tests will not be separated by empty lines unless you set "
+            "If the suite contains Test Template tests will not be separated by empty lines unless you set\n"
             "`separate_templated_tests` to True",
             "separate_templated_tests",
             self.separate_templated_tests,
             "Do not separate templated tests with empty lines",
             "Separate templated tests",
         )
-        consecutive_lines = Parameter(
-            "Consecutive empty lines inside settings, variables, keywords and test cases are also removed. You can "
-            "configure allowed number of consecutive empty lines (default 1):",
-            "consecutive_lines",
-            ValidateInt(min=0),
+        consecutive_lines = ParameterInt(
+            "Consecutive empty lines inside settings, variables, keywords and test cases are also removed.\n"
+            "You can configure allowed number of consecutive empty lines (default 1):",
+            param="consecutive_lines",
+            default=self.consecutive_lines,
+            min=0,
         )
         config.parameters.extend(
             [

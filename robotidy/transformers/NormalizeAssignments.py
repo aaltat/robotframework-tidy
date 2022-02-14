@@ -4,7 +4,6 @@ from collections import Counter
 
 from robot.api.parsing import ModelTransformer, Variable, Token
 from robotidy.exceptions import InvalidParameterValueError
-from robotidy.generate_config import TransformerGenConfig, Parameter, ValidateChoice
 
 
 class NormalizeAssignments(ModelTransformer):
@@ -86,7 +85,9 @@ class NormalizeAssignments(ModelTransformer):
         return types[value]
 
     def generate_config(self):
-        config = TransformerGenConfig(
+        from robotidy.generate_config import TransformerConfig, ParameterSelectSingle
+
+        config = TransformerConfig(
             name=self.__class__.__name__,
             enabled=self.__dict__.get("ENABLED", True),
             msg="""
@@ -98,7 +99,6 @@ class NormalizeAssignments(ModelTransformer):
                 @{list}  a
                 ...  b
                 ...  c
-        
                 ${variable}=  10
         
                 *** Keywords ***
@@ -114,7 +114,6 @@ class NormalizeAssignments(ModelTransformer):
                 @{list}  a
                 ...  b
                 ...  c
-        
                 ${variable}  10
         
                 *** Keywords ***
@@ -122,25 +121,34 @@ class NormalizeAssignments(ModelTransformer):
                     ${var}  Keyword1
                     ${var}   Keyword2
                     ${var}    Keyword
-            
             """,
         )
         if not config.enabled:
             return config
-        equal_sign_type = Parameter(
-            "By default all assignments signs in *** Keywords *** and *** Test Cases *** section are normalized to "
-            "most common sign. You can instead overwrite all signs with selected one (possible types are: "
-            "`autodetect` (default), `remove`, `equal_sign` ('='), `space_and_equal_sign` (' =')",
-            "equal_sign_type",
-            ValidateChoice(["autodetect", "remove", "equal_sign", "space_and_equal_sign"]),
+        equal_sign_type = ParameterSelectSingle(
+            "By default all assignments signs in *** Keywords *** and *** Test Cases *** section are normalized to\n"
+            "most common sign. You can instead overwrite all signs with selected sign flavour:",
+            param="equal_sign_type",
+            default="autodetect (default)",
+            choices={
+                "autodetect (default)": "autodetect",
+                "${var} Keyword": "remove",
+                "${var}= Keyword": "equal_sign",
+                "${var} = Keyword": "space_and_equal_sign",
+            },
         )
 
-        equal_sign_type_variables = Parameter(
-            "By default all assignments signs in *** Variables *** section are removed. You can instead overwrite "
-            "all signs with selected one (possible types are: "
-            "`autodetect`, `remove` (default), `equal_sign` ('='), `space_and_equal_sign` (' =')",
-            "equal_sign_type",
-            ValidateChoice(["autodetect", "remove", "equal_sign", "space_and_equal_sign"]),
+        equal_sign_type_variables = ParameterSelectSingle(
+            "By default all assignments signs in *** Variables *** section are removed. You can instead overwrite all\n"
+            "signs with selected sign flavour:",
+            param="equal_sign_type",
+            default="${var}  value (default)",
+            choices={
+                "autodetect": "autodetect",
+                "${var}  value (default)": "remove",
+                "${var}=  value": "equal_sign",
+                "${var} =  value": "space_and_equal_sign",
+            },
         )
         config.parameters.append(equal_sign_type)
         config.parameters.append(equal_sign_type_variables)

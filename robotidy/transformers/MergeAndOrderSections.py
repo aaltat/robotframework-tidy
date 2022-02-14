@@ -2,7 +2,6 @@ from robot.api.parsing import Token, ModelTransformer, SectionHeader, EmptyLine
 from robot.parsing.model.statements import Statement
 
 from robotidy.exceptions import InvalidParameterValueError
-from robotidy.generate_config import TransformerGenConfig, Parameter, ValidateCommaSeparated, ParameterBool
 
 
 class MergeAndOrderSections(ModelTransformer):
@@ -77,23 +76,56 @@ class MergeAndOrderSections(ModelTransformer):
                 "order",
                 order,
                 "Custom order should be provided in comma separated list with all section names:\n"
-                "order=comments,settings,variables,testcases,variables",
+                "order=comments,settings,variables,testcases",
             )
         return parsed_order
 
     def generate_config(self):
-        config = TransformerGenConfig(
+        from robotidy.generate_config import TransformerConfig, ParameterOrder, ParameterBool
+
+        config = TransformerConfig(
             name=self.__class__.__name__,
             enabled=self.__dict__.get("ENABLED", True),
-            msg="Do you want to merge duplicated sections and order them?",
+            msg="""
+            Do you want to merge duplicated sections and order them?
+            Following code:
+            
+                *** Keywords ***
+                Keyword
+                    No Operation
+                    
+               *** Settings ***
+               Library    Collections
+               
+               *** Keywords ***
+               Keyword 2
+                   No Operation
+            
+            will be transformed to:
+            
+                *** Settings ***
+                Library    Collections
+                
+                *** Keywords ***
+                Keyword
+                    No Operation
+                
+                Keyword 2
+                    No Operation
+            """,
         )
         if not config.enabled:
             return config
-        order = Parameter(
-            "Default order of section is: Comments > Settings > Variables > Test Cases > Keywords. You can configure "
-            "it by using comma separated list of sections (ie. settings,keywords,variables,testcases,comments):",
-            "order",
-            ValidateCommaSeparated(["settings", "keywords", "variables", "testcases", "comments"]),
+        order = ParameterOrder(
+            """
+            Default order of section is: Comments > Settings > Variables > Test Cases > Keywords.
+            You can configure  it by using comma separated list of sections 
+            (ie. settings,keywords,variables,testcases,comments):
+            """,
+            param="order",
+            default="comments,settings,variables,testcases,keywords",
+            valid="comments,settings,variables,testcases,keywords".split(","),
+            use_all=True,
         )
         create_comment_section = ParameterBool(
             "Any data before first section is treated as comment in Robot Framework. You can put them "

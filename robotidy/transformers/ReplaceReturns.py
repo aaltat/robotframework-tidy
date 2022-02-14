@@ -13,7 +13,6 @@ from robotidy.utils import (
     create_statement_from_tokens,
 )
 from robotidy.decorators import check_start_end_line
-from robotidy.generate_config import TransformerGenConfig, Parameter, ValidateInt, ParameterBool
 
 
 class ReplaceReturns(ModelTransformer):
@@ -65,7 +64,9 @@ class ReplaceReturns(ModelTransformer):
         self.return_statement = None
 
     def generate_config(self):
-        config = TransformerGenConfig(
+        from robotidy.generate_config import TransformerConfig
+
+        config = TransformerConfig(
             name=self.__class__.__name__,
             enabled=self.__dict__.get("ENABLED", True),
             msg="""
@@ -104,11 +105,8 @@ class ReplaceReturns(ModelTransformer):
     
                 Keyword 3
                     RETURN    Keyword   ${arg}
-
             """,
         )
-        if not config.enabled:
-            return config
         return config
 
     def visit_Keyword(self, node):  # noqa

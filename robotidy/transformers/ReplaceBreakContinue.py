@@ -9,7 +9,6 @@ except ImportError:
 
 from robotidy.utils import normalize_name, after_last_dot, wrap_in_if_and_replace_statement, ROBOT_VERSION
 from robotidy.decorators import check_start_end_line
-from robotidy.generate_config import TransformerGenConfig
 
 
 class ReplaceBreakContinue(ModelTransformer):
@@ -53,7 +52,9 @@ class ReplaceBreakContinue(ModelTransformer):
         self.in_loop = False
 
     def generate_config(self):
-        config = TransformerGenConfig(
+        from robotidy.generate_config import TransformerConfig
+
+        config = TransformerConfig(
             name=self.__class__.__name__,
             enabled=self.__dict__.get("ENABLED", True),
             msg="""
@@ -85,7 +86,6 @@ class ReplaceBreakContinue(ModelTransformer):
                             BREAK
                         END
                     END
-            
             """,
         )
         return config

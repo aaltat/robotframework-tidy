@@ -36,6 +36,41 @@ class NormalizeSettingName(ModelTransformer):
     See https://robotidy.readthedocs.io/en/latest/transformers/NormalizeSettingName.html for more examples.
     """
 
+    def generate_config(self):
+        from robotidy.generate_config import TransformerConfig
+
+        config = TransformerConfig(
+            name=self.__class__.__name__,
+            enabled=self.__dict__.get("ENABLED", True),
+            msg="""
+            Do you want to normalize setting names?
+            Following code:
+            
+                *** Settings ***
+                library    library.py
+                test template    Template
+                FORCE taGS    tag1
+        
+                *** Keywords ***
+                Keyword
+                    [arguments]    ${arg}
+                    [ SETUP]   Setup Keyword
+        
+            will be transformed to:
+        
+                *** Settings ***
+                Library    library.py
+                Test Template    Template
+                Force Tags    tag1
+        
+                *** Keywords ***
+                Keyword
+                [Arguments]    ${arg}
+                [Setup]   Setup Keyword
+            """,
+        )
+        return config
+
     @check_start_end_line
     def visit_Statement(self, node):  # noqa
         if node.type not in Token.SETTING_TOKENS:

@@ -52,6 +52,33 @@ class NormalizeSeparators(ModelTransformer):
             parsed_sections.add(part)
         return parsed_sections
 
+    def generate_config(self):
+        from robotidy.generate_config import TransformerConfig, ParameterSelectMany
+
+        config = TransformerConfig(
+            name=self.__class__.__name__,
+            enabled=self.__dict__.get("ENABLED", True),
+            msg="Do you want to normalize separators? All separators will be converted to fixed width of 4 spaces\n"
+            "(configurable via global argument `--spacecount`)",
+        )
+        if not config.enabled:
+            return config
+        sections = ParameterSelectMany(
+            "You can decide which sections should be transformed (all by default - hit ENTER):",
+            param="sections",
+            default={"comments", "settings", "testcases", "keywords", "variables"},
+            choices={
+                "*** Comments ***": "comments",
+                "*** Settings ***": "settings",
+                "*** Test Cases ***": "testcases",
+                "*** Keywords ***": "keywords",
+                "*** Variables ***": "variables",
+            },
+            select_all=True,
+        )
+        config.parameters.append(sections)
+        return config
+
     def visit_File(self, node):  # noqa
         self.indent = 0
         return self.generic_visit(node)

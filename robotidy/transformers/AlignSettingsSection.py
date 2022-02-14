@@ -4,7 +4,6 @@ from robot.api.parsing import ModelTransformer, Token
 from robot.parsing.model import Statement
 
 from robotidy.utils import node_outside_selection, round_to_four, tokens_by_lines, left_align, is_blank_multiline
-from robotidy.generate_config import TransformerGenConfig, Parameter, ValidateInt
 
 
 class AlignSettingsSection(ModelTransformer):
@@ -68,7 +67,9 @@ class AlignSettingsSection(ModelTransformer):
         self.min_width = min_width
 
     def generate_config(self):
-        config = TransformerGenConfig(
+        from robotidy.generate_config import TransformerConfig, ParameterInt
+
+        config = TransformerConfig(
             name=self.__class__.__name__,
             enabled=self.__dict__.get("ENABLED", True),
             msg="""
@@ -90,39 +91,41 @@ class AlignSettingsSection(ModelTransformer):
                 Variables       variables.py
                 Test Timeout    1 min
                 # this should be left aligned
-
             """,
         )
         if not config.enabled:
             return config
-        up_to_param = Parameter(
-            "By default only first 2 data columns are aligned. The rest is separated by standard "
-            "separator. You can configure it (use 0 to align all columns):",
-            "up_to_column",
-            ValidateInt(min=0),
+        up_to_param = ParameterInt(
+            "By default only first 2 data columns are aligned. The rest is separated by standard separator.\n"
+            "You can configure how many data columns are aligned (use 0 to align all columns):",
+            param="up_to_column",
+            default=2,
+            min=0,
         )
-        argument_indent = Parameter(
+        argument_indent = ParameterInt(
             """
-        Arguments inside keywords in Suite Setup, Suite Teardown, Test Setup and Test Teardown are indented 
-        by additional ``argument_indent`` (default ``4``) spaces:
-
-        *** Settings ***
-        Suite Setup         Start Session
-        ...                     host=${IPADDRESS}
-        ...                     user=${USERNAME}
-        ...                     password=${PASSWORD}
-        Suite Teardown      Close Session
-        
-        You can configure the indent (use 0 to disable this feature):
-        """,
-            "argument_indent",
-            ValidateInt(min=0),
+            Arguments inside keywords in Suite Setup, Suite Teardown, Test Setup and Test Teardown are indented 
+            by additional `argument_indent` (default `4`) spaces:
+    
+            *** Settings ***
+            Suite Setup         Start Session
+            ...                     host=${IPADDRESS}
+            ...                     user=${USERNAME}
+            ...                     password=${PASSWORD}
+            Suite Teardown      Close Session
+    
+            You can configure the indent (use 0 to disable this feature):
+            """,
+            param="argument_indent",
+            default=4,
+            min=0,
         )
-        min_width = Parameter(
+        min_width = ParameterInt(
             "Data columns are aligned to longest token in given column. You can change this behaviour and use fixed "
-            "minimal width of column:",
-            "min_width",
-            ValidateInt(min=0),
+            "minimal width of column. Use 0 for default behaviour (align to longest token):",
+            param="min_width",
+            default=0,
+            min=0,
         )
         config.parameters.append(up_to_param)
         config.parameters.append(argument_indent)

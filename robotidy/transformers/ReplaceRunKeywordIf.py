@@ -10,7 +10,6 @@ from robot.api.parsing import (
 )
 from robotidy.utils import normalize_name, after_last_dot
 from robotidy.decorators import check_start_end_line
-from robotidy.generate_config import TransformerGenConfig, Parameter, ValidateInt, ParameterBool
 
 
 def insert_separators(indent, tokens, separator):
@@ -72,7 +71,9 @@ class ReplaceRunKeywordIf(ModelTransformer):
     """
 
     def generate_config(self):
-        config = TransformerGenConfig(
+        from robotidy.generate_config import TransformerConfig
+
+        config = TransformerConfig(
             name=self.__class__.__name__,
             enabled=self.__dict__.get("ENABLED", True),
             msg="""
@@ -92,8 +93,7 @@ class ReplaceRunKeywordIf(ModelTransformer):
                     Keyword2
                 ELSE
                     Keyword3
-                END
-            
+                END 
             """,
         )
         return config

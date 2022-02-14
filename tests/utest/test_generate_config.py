@@ -2,6 +2,7 @@ from unittest.mock import patch, mock_open
 from pathlib import Path
 
 from robotidy.generate_config import GenerateConfig
+from robotidy.transformers.AlignVariablesSection import AlignVariablesSection
 
 
 class TestGenerateConfig:

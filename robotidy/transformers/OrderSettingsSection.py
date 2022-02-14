@@ -133,6 +133,82 @@ class OrderSettingsSection(ModelTransformer):
                 f"Custom order should be provided in comma separated list with valid group names:\n{sorted(mapping.keys())}",
             )
 
+    def generate_config(self):
+        from robotidy.generate_config import TransformerConfig, ParameterOrder, ParameterInt
+
+        config = TransformerConfig(
+            name=self.__class__.__name__,
+            enabled=self.__dict__.get("ENABLED", True),
+            msg="""
+            Do you want to group and order settings inside *** Settings *** section?
+            Settings are grouped in following groups:
+                - documentation (Documentation, Metadata),
+                - imports (Library, Resource, Variables),
+                - settings (Suite Setup and Teardown, Test Setup and Teardown, Test Timeout, Test Template),
+                - tags (Force Tags, Default Tags)
+            Then ordered by groups (according to `group_order = documentation,imports,settings,tags` order). Every
+            group is separated by `new_lines_between_groups = 1` new lines.
+            """,
+        )
+        if not config.enabled:
+            return config
+        new_lines_between_groups = ParameterInt(
+            """
+            How much lines should be between each group of settings?
+            By default there is one new line between each group. For example:
+                
+                *** Settings ***
+                Library    Selenium
+                
+                Suite Setup    Keyword
+                Suite Teardown    Keyword
+                
+                Force Tags    tag
+            """,
+            param="new_lines_between_groups",
+            default=self.new_lines_between_groups,
+            min=0,
+        )
+        group_order = ParameterOrder(
+            "Please define order of the groups (using comma separated list of names). Omitted groups will be removed!",
+            param="group_order",
+            default="documentation,imports,settings,tags",
+            valid="documentation,imports,settings,tags".split(","),
+        )
+        documentation_order = ParameterOrder(
+            "Please define order of documentation settings. Omitted setting names will be removed!",
+            param="documentation_order",
+            default="documentation,metadata",
+            valid="documentation,metadata".split(","),
+        )
+        imports_order = ParameterOrder(
+            "If you wish to order imports (preserved by default) please define order. Use `preserved` to not order\n"
+            "imports. If you define order - omitted import setting names will be removed!",
+            param="imports_order",
+            default="preserved",
+            valid=["preserved", "library", "resources", "variables"],
+        )
+        settings_order = ParameterOrder(
+            "Please define order of settings. Omitted setting names will be removed!",
+            param="settings_order",
+            default="suite_setup,suite_teardown,test_setup,test_teardown,test_timeout,test_template",
+            valid="suite_setup,suite_teardown,test_setup,test_teardown,test_timeout,test_template".split(","),
+        )
+        tags_order = ParameterOrder(
+            "Please define order of tags settings. Omitted setting names will be removed!",
+            param="tags_order",
+            default="force_tags,default_tags",
+            valid="force_tags,default_tags".split(","),
+        )
+
+        config.parameters.append(new_lines_between_groups)
+        config.parameters.append(group_order)
+        config.parameters.append(documentation_order)
+        config.parameters.append(imports_order)
+        config.parameters.append(settings_order)
+        config.parameters.append(tags_order)
+        return config
+
     def visit_File(self, node):  # noqa
         self.last_section = node.sections[-1] if node.sections else None
         return self.generic_visit(node)

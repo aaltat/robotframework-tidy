@@ -9,7 +9,6 @@ except ImportError:
 
 from robotidy.utils import ROBOT_VERSION, normalize_name
 from robotidy.decorators import check_start_end_line
-from robotidy.generate_config import TransformerGenConfig, Parameter, ValidateInt, ParameterBool
 
 
 class InlineIf(ModelTransformer):
@@ -61,35 +60,38 @@ class InlineIf(ModelTransformer):
         self.skip_else = skip_else
 
     def generate_config(self):
-        config = TransformerGenConfig(
+        from robotidy.generate_config import TransformerConfig, ParameterInt, ParameterBool
+
+        config = TransformerConfig(
             name=self.__class__.__name__,
             enabled=self.__dict__.get("ENABLED", True),
             msg="""
-            Do you want to transform simple IFs such as:
+            Do you want to transform simple IFs to inline IFs?
+            Following code:
         
                 IF    $condition1
                     Keyword    argument
                 END
             
-            to inline IFs:
+            will be transformed to:
         
                 IF    $condition1    Keyword    argument
-        
             """,
         )
         if not config.enabled:
             return config
-        line_length_param = Parameter(
-            "InlineIf will transform all FORs that can fit under {line_length} character "
-            "length. You can use this value or configure it:",
-            "line_length",
-            ValidateInt(min=0),
+        line_length_param = ParameterInt(
+            "InlineIf will transform all FORs that can fit under `--line-length` character count.\n"
+            "You can use this value or configure it:",
+            param="line_length",
+            default=120,
+            min=0,
         )
         skip_else_param = ParameterBool(
             "It is possible to not transform IFs with ELSE and ELSE IF branches:",
             "skip_else",
             self.skip_else,
-            "Transform (default)",
+            "Transform",
             "Skip IFs with ELSE, ELSE IF branches",
         )
         config.parameters.append(line_length_param)
