@@ -1,9 +1,15 @@
 from typing import Optional
 
-from robot.api.parsing import EmptyLine, ModelTransformer, Token
+from robot.api.parsing import EmptyLine, ModelTransformer, Token, KeywordCall, ForHeader
+try:
+    from robot.api.parsing import ExceptHeader, WhileHeader, ReturnStatement
+except ImportError:
+    ExceptHeader, WhileHeader, ReturnStatement = None, None, None
+
+from robot.parsing.model.statements import MultiValue, IfElseHeader
 
 from robotidy.disablers import skip_section_if_disabled
-from robotidy.utils import is_suite_templated
+from robotidy.utils import is_suite_templated, ROBOT_VERSION
 
 
 class NormalizeNewLines(ModelTransformer):
@@ -25,6 +31,8 @@ class NormalizeNewLines(ModelTransformer):
 
     See https://robotidy.readthedocs.io/en/latest/transformers/NormalizeNewLines.html for more examples.
     """
+
+    WHITESPACE_TOKENS = {Token.EOL, Token.SEPARATOR}
 
     def __init__(
         self,
@@ -80,7 +88,15 @@ class NormalizeNewLines(ModelTransformer):
 
     def visit_Statement(self, node):  # noqa
         tokens = []
+        # remove empty lines between ...
+        # TODO: Maybe just detect if there is at least one ..., and then remove empty lines?
+        # easier to filter out statements like empty lines itself
+        norm_multiline = isinstance(node, (KeywordCall, MultiValue, IfElseHeader, ForHeader))
+        if ROBOT_VERSION.major > 4:
+            norm_multiline = norm_multiline or isinstance(node, (WhileHeader, ExceptHeader, ReturnStatement))
         for line in node.lines:
+            if norm_multiline and all(token.type in self.WHITESPACE_TOKENS for token in line):
+                continue
             if line[-1].type == Token.EOL:
                 line[-1].value = "\n"  # TODO: use global formatting in the future
             tokens.extend(line)
